@@ -40,6 +40,10 @@ public class UnrealMCP : ModuleRules
 			"LevelEditor",
 			"EnhancedInput",
 			"InputBlueprintNodes",
+			"UMG",
+			"UMGEditor",
+			"AnimGraph",
+			"AnimGraphRuntime",
 		});
 	}
 }

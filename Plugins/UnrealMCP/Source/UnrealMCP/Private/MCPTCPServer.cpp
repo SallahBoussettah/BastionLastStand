@@ -10,6 +10,11 @@
 #include "Commands/MCPLevelCommands.h"
 #include "Commands/MCPAssetCommands.h"
 #include "Commands/MCPPIECommands.h"
+#include "Commands/MCPWidgetCommands.h"
+#include "Commands/MCPAnimCommands.h"
+#include "Commands/MCPDebugCommands.h"
+#include "Commands/MCPDataTableCommands.h"
+#include "Commands/MCPInputCommands.h"
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Interfaces/IPv4/IPv4Endpoint.h"
@@ -400,6 +405,7 @@ void FMCPTCPServer::RegisterCommands()
 	Register(MakeShared<FMCPRemoveBlueprintVariableCommand>());
 	Register(MakeShared<FMCPAddBlueprintComponentCommand>());
 	Register(MakeShared<FMCPSetBlueprintComponentDefaultsCommand>());
+	Register(MakeShared<FMCPImplementInterfaceCommand>());
 
 	// Actor commands
 	Register(MakeShared<FMCPSpawnActorCommand>());
@@ -425,6 +431,7 @@ void FMCPTCPServer::RegisterCommands()
 	Register(MakeShared<FMCPSetPinValueCommand>());
 	Register(MakeShared<FMCPCreateFunctionCommand>());
 	Register(MakeShared<FMCPDeleteFunctionCommand>());
+	Register(MakeShared<FMCPArrangeNodesCommand>());
 
 	// Viewport commands
 	Register(MakeShared<FMCPTakeScreenshotCommand>());
@@ -461,6 +468,44 @@ void FMCPTCPServer::RegisterCommands()
 	Register(MakeShared<FMCPStopPIECommand>());
 	Register(MakeShared<FMCPGetPIEStatusCommand>());
 	Register(MakeShared<FMCPSetPIEPausedCommand>());
+
+	// Widget commands
+	Register(MakeShared<FMCPCreateWidgetBlueprintCommand>());
+	Register(MakeShared<FMCPAddWidgetCommand>());
+	Register(MakeShared<FMCPSetWidgetPropertyCommand>());
+	Register(MakeShared<FMCPGetWidgetTreeCommand>());
+	Register(MakeShared<FMCPRemoveWidgetCommand>());
+
+	// Animation commands
+	Register(MakeShared<FMCPCreateAnimBlueprintCommand>());
+	Register(MakeShared<FMCPAddAnimStateCommand>());
+	Register(MakeShared<FMCPAddAnimTransitionCommand>());
+	Register(MakeShared<FMCPSetAnimTransitionRuleCommand>());
+	Register(MakeShared<FMCPAddBlendSpaceCommand>());
+	Register(MakeShared<FMCPAddAnimMontageCommand>());
+	Register(MakeShared<FMCPGetAnimGraphCommand>());
+
+	// Debug commands
+	Register(MakeShared<FMCPSetBreakpointCommand>());
+	Register(MakeShared<FMCPGetBreakpointsCommand>());
+	Register(MakeShared<FMCPGetWatchValuesCommand>());
+	Register(MakeShared<FMCPStepExecutionCommand>());
+	Register(MakeShared<FMCPGetCallStackCommand>());
+
+	// DataTable commands
+	Register(MakeShared<FMCPCreateDataTableCommand>());
+	Register(MakeShared<FMCPAddDataTableRowCommand>());
+	Register(MakeShared<FMCPModifyDataTableRowCommand>());
+	Register(MakeShared<FMCPDeleteDataTableRowCommand>());
+	Register(MakeShared<FMCPGetDataTableRowsCommand>());
+	Register(MakeShared<FMCPImportDataTableCSVCommand>());
+
+	// Input commands
+	Register(MakeShared<FMCPCreateInputActionCommand>());
+	Register(MakeShared<FMCPCreateInputMappingContextCommand>());
+	Register(MakeShared<FMCPAddInputMappingCommand>());
+	Register(MakeShared<FMCPRemoveInputMappingCommand>());
+	Register(MakeShared<FMCPGetInputMappingContextCommand>());
 
 	UE_LOG(LogTemp, Log, TEXT("UnrealMCP: Registered %d command handlers"), CommandHandlers.Num());
 }
