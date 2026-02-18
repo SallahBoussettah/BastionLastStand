@@ -64,9 +64,9 @@ All project assets live inside `Content/Bastion/`. Nothing is placed directly in
 | 2     | Footstep Sound Surface Detection  | COMPLETE    |
 | 3     | Resource Gathering System         | NOT STARTED |
 | 4     | Workbench and Crafting System     | NOT STARTED |
-| 5     | Base Core and Wave System         | NOT STARTED |
+| 5     | Basic Combat and Health System    | NOT STARTED |
 | 6     | Enemy AI and Spawning             | NOT STARTED |
-| 7     | Basic Combat                      | NOT STARTED |
+| 7     | Base Core and Wave System         | NOT STARTED |
 | 8     | Day Night Cycle                   | NOT STARTED |
 | 9     | UI and Game States                | NOT STARTED |
 | 10    | Polish and Portfolio Prep         | NOT STARTED |
@@ -192,21 +192,22 @@ Sound polish applied: VolumeMultiplier tuned per surface (0.25 Concrete/Default,
 
 ---
 
-## PHASE 5 — Base Core and Wave System
+## PHASE 5 — Basic Combat and Health System
 
-**Goal:** A base core actor sits at the center of the sandbox. It has health. A wave manager controls the timing of enemy waves. The game ends if the core reaches zero health.
+**Goal:** The player can attack using a melee weapon. A reusable health component is created and attached to the player. This phase must come before enemies so the player can fight back during testing.
 
 **Tasks:**
-- [ ] Create BP_BaseCore as an Actor Blueprint with a mesh (glowing sphere or pillar), health component, and health bar widget component above it
-- [ ] Create BP_HealthComponent as an Actor Component with variables: MaxHealth, CurrentHealth, and functions: TakeDamage, Heal, IsDead — attach it to BP_BaseCore and later to enemies and the player
-- [ ] Create BP_WaveManager as an Actor Blueprint placed in the level — it holds wave data and controls the day/night timing loop
-- [ ] Create a struct S_WaveData with fields: WaveNumber, EnemyCount, SpawnDelay, EnemyType
-- [ ] Create a DataTable DT_Waves using S_WaveData and define at least 5 waves
-- [ ] BP_WaveManager fires a delegate/event OnWaveStart and OnWaveEnd that other systems can bind to
-- [ ] When the core reaches zero health, BP_WaveManager broadcasts OnGameOver
-- [ ] Add Print String: `[WAVE] Wave <number> starting`, `[CORE] Core took damage — HP: <current>/<max>`, `[GAME] Game Over`
+- [ ] Create BP_HealthComponent as an Actor Component with variables: MaxHealth, CurrentHealth, and functions: TakeDamage, Heal, IsDead -- reusable for player, enemies, and base core
+- [ ] Attach BP_HealthComponent to BP_BastionCharacter
+- [ ] Create BP_MeleeWeapon as an Actor Blueprint with a mesh, collision box, and damage value variable
+- [ ] Add an equip system to BP_BastionCharacter -- the player can equip a crafted weapon and it attaches to the hand socket
+- [ ] Create a light attack input (left mouse button) that triggers a melee attack animation from GASP or a custom montage
+- [ ] During the attack animation swing, enable the weapon collision box and call TakeDamage on any actor with BP_HealthComponent it overlaps
+- [ ] After the swing, disable the collision box
+- [ ] Add a player health bar to the HUD
+- [ ] Add Print String: `[COMBAT] Player attacked`, `[COMBAT] Hit target -- Target HP: <hp>`, `[COMBAT] Player took damage -- Player HP: <hp>`
 
-**Polish Criteria:** Core health bar displays correctly. Wave manager counts down correctly. Game over event fires when core is destroyed. No errors.
+**Polish Criteria:** Combat feels responsive. Weapon collision detects hits correctly. Health component works as a standalone reusable system. Player health bar displays and updates. No ghost hits.
 
 **Completion Notes:**
 *(Claude Code fills this in when Phase 5 is complete)*
@@ -215,41 +216,43 @@ Sound polish applied: VolumeMultiplier tuned per surface (0.25 Concrete/Default,
 
 ## PHASE 6 — Enemy AI and Spawning
 
-**Goal:** Enemies spawn at the edges of the sandbox when a wave begins and walk toward the base core. If they reach a barricade or the player, they attack.
+**Goal:** Enemies spawn in the sandbox and walk toward the player or a target. They attack when in range. The player can kill them using the combat system from Phase 5.
 
 **Tasks:**
 - [ ] Create BP_EnemyBase as a Character Blueprint using a simple humanoid mesh
-- [ ] Create BP_EnemyAIController to drive BP_EnemyBase using Unreal's behavior tree system
-- [ ] Create BT_EnemyBehavior (Behavior Tree) with a simple loop: move to core, if player nearby move to player and attack, if barricade in way attack barricade
-- [ ] Create BB_Enemy (Blackboard) with keys: TargetActor, bCanSeePlayer, bAtCore
 - [ ] Attach BP_HealthComponent to BP_EnemyBase
-- [ ] Create BP_EnemySpawner as an Actor placed at each corner of the sandbox — it receives spawn commands from BP_WaveManager and spawns the correct number of BP_EnemyBase actors
-- [ ] Enemies must navigate using the NavMesh — add a Nav Mesh Bounds Volume to the sandbox level
-- [ ] Add Print String: `[ENEMY] Spawned`, `[ENEMY] Moving to core`, `[ENEMY] Attacking`, `[ENEMY] Dead`
+- [ ] Create BP_EnemyAIController to drive BP_EnemyBase using Unreal's behavior tree system
+- [ ] Create BT_EnemyBehavior (Behavior Tree) with a simple loop: move to player, attack when in range, die when health reaches zero
+- [ ] Create BB_Enemy (Blackboard) with keys: TargetActor, bCanSeePlayer
+- [ ] Enemies deal damage to the player when they attack
+- [ ] Create a simple hit react: enemies flash a different color for 0.2 seconds when hit
+- [ ] Enemies must navigate using the NavMesh -- add a Nav Mesh Bounds Volume to the sandbox level
+- [ ] Place a few test enemies in the sandbox for combat testing
+- [ ] Add Print String: `[ENEMY] Spawned`, `[ENEMY] Moving to target`, `[ENEMY] Attacking`, `[ENEMY] Dead`
 
-**Polish Criteria:** Enemies spawn, navigate around obstacles, reach the core and attack it, die when health reaches zero. NavMesh covers the full sandbox. No pathing errors.
+**Polish Criteria:** Enemies spawn, navigate toward the player, attack, take damage from the player's weapon, and die when health reaches zero. NavMesh covers the full sandbox. No pathing errors.
 
 **Completion Notes:**
 *(Claude Code fills this in when Phase 6 is complete)*
 
 ---
 
-## PHASE 7 — Basic Combat
+## PHASE 7 — Base Core and Wave System
 
-**Goal:** The player can attack enemies using a melee weapon crafted at the workbench. Hits deal damage using the health component system.
+**Goal:** A base core actor sits at the center of the sandbox. It has health. A wave manager controls the timing of enemy waves. Enemies now target the core. The game ends if the core reaches zero health.
 
 **Tasks:**
-- [ ] Create BP_MeleeWeapon as an Actor Blueprint with a mesh, collision box, and damage value variable
-- [ ] Add an equip system to BP_BastionCharacter — the player can equip a crafted weapon and it attaches to the hand socket
-- [ ] Create a light attack input (left mouse button) that triggers a melee attack animation from GASP or a custom montage
-- [ ] During the attack animation swing, enable the weapon collision box and call TakeDamage on any BP_EnemyBase it overlaps
-- [ ] After the swing, disable the collision box
-- [ ] Enemies also deal damage to the player when they attack — BP_BastionCharacter gets a BP_HealthComponent
-- [ ] Add a player health bar to the HUD
-- [ ] Create a simple hit react: enemies flash a different color for 0.2 seconds when hit
-- [ ] Add Print String: `[COMBAT] Player attacked`, `[COMBAT] Hit enemy — Enemy HP: <hp>`, `[COMBAT] Player took damage — Player HP: <hp>`
+- [ ] Create BP_BaseCore as an Actor Blueprint with a mesh (glowing sphere or pillar), BP_HealthComponent, and health bar widget component above it
+- [ ] Create BP_WaveManager as an Actor Blueprint placed in the level -- it holds wave data and controls wave timing
+- [ ] Create a struct S_WaveData with fields: WaveNumber, EnemyCount, SpawnDelay, EnemyType
+- [ ] Create a DataTable DT_Waves using S_WaveData and define at least 5 waves
+- [ ] Create BP_EnemySpawner as an Actor placed at each corner of the sandbox -- it receives spawn commands from BP_WaveManager
+- [ ] Update BT_EnemyBehavior to include: move to core, if player nearby switch to player, if barricade in way attack barricade
+- [ ] BP_WaveManager fires a delegate/event OnWaveStart and OnWaveEnd that other systems can bind to
+- [ ] When the core reaches zero health, BP_WaveManager broadcasts OnGameOver
+- [ ] Add Print String: `[WAVE] Wave <number> starting`, `[CORE] Core took damage -- HP: <current>/<max>`, `[GAME] Game Over`
 
-**Polish Criteria:** Combat feels responsive. Weapons connect with enemies correctly. Damage numbers are correct. Player health depletes and game over fires if player dies. No ghost hits.
+**Polish Criteria:** Core health bar displays correctly. Waves spawn enemies in sequence. Enemies navigate to core and attack it. Game over fires when core is destroyed. No errors.
 
 **Completion Notes:**
 *(Claude Code fills this in when Phase 7 is complete)*
@@ -338,7 +341,7 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ## Redesign Log
 
-*(Claude Code adds entries here when a system is redesigned mid-development)*
+**Phase reorder (v1.5):** Moved Basic Combat from Phase 7 to Phase 5. Original order had waves (5) and enemies (6) before combat (7), meaning enemies would spawn with no way for the player to fight back during testing. New order: Combat (5) -> Enemies (6) -> Waves (7). Health Component creation moved into Phase 5 so it is available for enemies and base core in later phases.
 
 ---
 
@@ -348,5 +351,5 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ---
 
-*Document version: 1.4 -- Phase 2 sound polish complete*
+*Document version: 1.5 -- Phase reorder (combat before enemies)*
 *Last updated by: Salah Eddine Boussettah*
