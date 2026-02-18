@@ -62,6 +62,7 @@ All project assets live inside `Content/Bastion/`. Nothing is placed directly in
 | 0     | Project Setup                     | COMPLETE    |
 | 1     | GASP Migration and Movement       | COMPLETE    |
 | 2     | Footstep Sound Surface Detection  | COMPLETE    |
+| 2.5   | Door Interaction System           | COMPLETE    |
 | 3     | Resource Gathering System         | NOT STARTED |
 | 4     | Workbench and Crafting System     | NOT STARTED |
 | 5     | Basic Combat and Health System    | NOT STARTED |
@@ -146,6 +147,36 @@ Phase 1 complete. GASP fully migrated with 7 required plugins enabled (PoseSearc
 Phase 2 complete. Footstep surface detection system fully functional. 4 Physical Materials created and assigned to surface zone materials plus the default floor. 20 SoundWave assets imported (5 per surface: Concrete from PavementTiles, Metal from LowMetal, Wood from Parquet_Floor, Gravel from DirtRoad). HandleFootstep function in BP_BastionCharacter performs line trace, detects Physical Material via string matching, and plays a random sound variant per surface. GASP foley notify system modified to route through our custom handler while preserving fallback to default GASP sounds for non-Bastion characters.
 
 Sound polish applied: VolumeMultiplier tuned per surface (0.25 Concrete/Default, 0.4 Metal/Wood/Gravel), RandomFloatInRange pitch variation (0.92-1.08) on all sounds. GASP default jump/land sounds suppressed via Cast To BP_BastionCharacter checks in both BP_AnimNotify_FoleyEvent Received_Notify (two bail-out paths) and CBP_SandboxCharacter PlayAudioEvent. HandleFootstep includes velocity gate (XY speed > 10 cm/s) to prevent phantom footsteps from landing recovery animations when stationary.
+
+---
+
+## PHASE 2.5 — Door Interaction System
+
+**Goal:** Create a reusable interaction framework and a working door as the first interactable object. The player walks into range, presses E, and the door swings open or closed smoothly. This lays the groundwork for all future interactables (workbench, containers, resource nodes).
+
+**Tasks:**
+- [DONE] Create BPI_Interactable Blueprint Interface with Interact(Caller: Actor) function -- Created manually at /Game/Bastion/Blueprints/Interfaces/BPI_Interactable
+- [DONE] Create BP_Door Actor Blueprint with DoorFrame, DoorPivot, DoorMesh, and InteractionBox components -- /Game/Bastion/Blueprints/Interactables/BP_Door
+- [DONE] DoorPivot positioned at door hinge edge (Y=-40), DoorMesh as child of DoorPivot with mesh origin aligned to pivot for correct hinge rotation
+- [DONE] DoorTimeline with DoorAlpha float track (0.0 to 1.0) drives smooth open/close animation via SetRelativeRotation on DoorPivot
+- [DONE] Interaction logic: Event Interact (BPI_Interactable) checks bCanInteract, toggles bIsOpen, plays timeline forward (open) or reverse (close)
+- [DONE] OpenAngle (90) and open_direction (1) control rotation amount and direction
+- [DONE] Timeline Finished event re-enables bCanInteract for spam protection
+- [DONE] OnComponentBeginOverlap/EndOverlap on InteractionBox calls SetInteractableActor/ClearInteractableActor on BP_BastionCharacter via Cast
+- [DONE] Added current_interactable (Actor ref) variable to BP_BastionCharacter with SetInteractableActor and ClearInteractableActor functions
+- [DONE] EnhancedInputAction IA_Interact (E key) triggers IsValid check on current_interactable, then sends Interact interface message to the target
+- [DONE] Place BP_Door in SandboxLevel and verify open/close works from both sides
+
+**Design Notes:**
+- BPI_Interactable interface is generic, any future interactable (workbench, chest, resource node) can implement the same Interact function
+- IA_Interact input action and IMC_Sandbox mapping context were pre-existing from GASP setup
+- OpenAngle and open_direction variables were created as int32 by MCP (known limitation), ToFloat conversion nodes used as workaround
+- Blueprint CDO defaults set via Default__BP_Door_C path for bCanInteract=true, OpenAngle=90, open_direction=1
+
+**Polish Criteria:** Door opens and closes smoothly on E press. Rotation is from the hinge edge, not the center. Spam-protected during animation. Interaction only fires when in range.
+
+**Completion Notes:**
+Phase 2.5 complete. Reusable interaction framework built with BPI_Interactable interface. BP_Door has full open/close functionality with timeline-driven rotation from the correct hinge edge. BP_BastionCharacter stores current_interactable reference via overlap detection and calls Interact via interface message on E press. System is extensible for future interactables. Door mesh uses Door_a with DoorFrame_a from /Game/Bastion/Meshes/Doors/.
 
 ---
 
@@ -351,5 +382,5 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ---
 
-*Document version: 1.5 -- Phase reorder (combat before enemies)*
+*Document version: 1.6 -- Added Phase 2.5 Door Interaction System*
 *Last updated by: Salah Eddine Boussettah*
