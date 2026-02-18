@@ -143,7 +143,9 @@ Phase 1 complete. GASP fully migrated with 7 required plugins enabled (PoseSearc
 **Polish Criteria:** Each surface zone plays a clearly different footstep sound. No incorrect sounds fire. No log errors. Sounds feel timed to the animation.
 
 **Completion Notes:**
-Phase 2 complete. Footstep surface detection system fully functional. 4 Physical Materials created and assigned to surface zone materials plus the default floor. 20 SoundWave assets imported (5 per surface: Concrete from PavementTiles, Metal from LowMetal, Wood from Parquet_Floor, Gravel from DirtRoad). HandleFootstep function in BP_BastionCharacter performs line trace, detects Physical Material via string matching, and plays a random sound variant per surface. GASP foley notify system modified to route through our custom handler while preserving fallback to default GASP sounds for non-Bastion characters. Sound polish pass pending (volume, pitch variation, attenuation).
+Phase 2 complete. Footstep surface detection system fully functional. 4 Physical Materials created and assigned to surface zone materials plus the default floor. 20 SoundWave assets imported (5 per surface: Concrete from PavementTiles, Metal from LowMetal, Wood from Parquet_Floor, Gravel from DirtRoad). HandleFootstep function in BP_BastionCharacter performs line trace, detects Physical Material via string matching, and plays a random sound variant per surface. GASP foley notify system modified to route through our custom handler while preserving fallback to default GASP sounds for non-Bastion characters.
+
+Sound polish applied: VolumeMultiplier tuned per surface (0.25 Concrete/Default, 0.4 Metal/Wood/Gravel), RandomFloatInRange pitch variation (0.92-1.08) on all sounds. GASP default jump/land sounds suppressed via Cast To BP_BastionCharacter checks in both BP_AnimNotify_FoleyEvent Received_Notify (two bail-out paths) and CBP_SandboxCharacter PlayAudioEvent. HandleFootstep includes velocity gate (XY speed > 10 cm/s) to prevent phantom footsteps from landing recovery animations when stationary.
 
 ---
 
@@ -346,5 +348,5 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ---
 
-*Document version: 1.3 -- Phase 2 complete*
+*Document version: 1.4 -- Phase 2 sound polish complete*
 *Last updated by: Salah Eddine Boussettah*
