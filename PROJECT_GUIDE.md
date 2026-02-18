@@ -61,7 +61,7 @@ All project assets live inside `Content/Bastion/`. Nothing is placed directly in
 |-------|-----------------------------------|-------------|
 | 0     | Project Setup                     | COMPLETE    |
 | 1     | GASP Migration and Movement       | COMPLETE    |
-| 2     | Footstep Sound Surface Detection  | NOT STARTED |
+| 2     | Footstep Sound Surface Detection  | COMPLETE    |
 | 3     | Resource Gathering System         | NOT STARTED |
 | 4     | Workbench and Crafting System     | NOT STARTED |
 | 5     | Base Core and Wave System         | NOT STARTED |
@@ -128,20 +128,22 @@ Phase 1 complete. GASP fully migrated with 7 required plugins enabled (PoseSearc
 **Context for Claude Code:** This system uses Unreal's Physical Materials assigned to the floor meshes of each surface zone. The animation Blueprint or the character Blueprint listens to animation notify events (AnimNotify_Footstep) and at that moment casts a line trace downward from the character's foot to detect the Physical Material of the surface. Based on the result it selects and plays the appropriate sound cue.
 
 **Tasks:**
-- [ ] Create 4 Physical Materials: PM_Concrete, PM_Metal, PM_Wood, PM_Gravel — place in Content/Bastion/Materials/
-- [ ] Assign each Physical Material to the corresponding surface zone floor mesh material
-- [ ] Create 4 placeholder Sound Cues (can use engine default sounds initially): SC_Footstep_Concrete, SC_Footstep_Metal, SC_Footstep_Wood, SC_Footstep_Gravel — place in Content/Bastion/Sounds/Footsteps/
-- [ ] Add AnimNotify_Footstep events to the relevant walking and running animation sequences in GASP (left foot and right foot notify events)
-- [ ] In BP_BastionCharacter create a function called HandleFootstep that performs a line trace downward from the character's foot socket
-- [ ] The line trace reads the Physical Material of the hit result and selects the correct sound cue using a Switch on Enum or Map lookup
-- [ ] Play the selected sound at the foot location using PlaySoundAtLocation
-- [ ] Add Print String: `[FOOTSTEP] Surface detected: <surface name>`
-- [ ] Test by walking across all 4 surface zones and verifying the correct sound plays on each
+- [DONE] Create 4 Physical Materials: PM_Concrete, PM_Metal, PM_Wood, PM_Gravel -- Created manually in Content/Bastion/Materials/
+- [DONE] Assign each Physical Material to the corresponding surface zone floor mesh material -- PM assigned to M_Concrete, M_Metal, M_Wood, M_Gravel via PhysMaterial property. M_Floor_Main also assigned PM_Concrete as default
+- [DONE] Import 20 footstep SoundWave assets (5 variants per surface) -- Content/Bastion/Sounds/Footsteps/{Concrete,Metal,Wood,Gravel}/FS_{Surface}_01-05.wav sourced from Footsteps Mini Sound Pack
+- [DONE] Hooked into GASP's existing AnimNotify foley system -- Modified BP_AnimNotify_FoleyEvent Received_Notify to cast owner to BP_BastionCharacter and call HandleFootstep, with GASP fallback on cast failure
+- [DONE] In BP_BastionCharacter created HandleFootstep function with line trace downward (200 units) from actor location, bTraceComplex=true
+- [DONE] Line trace reads Physical Material via GetObjectName + Contains string matching for surface detection (Concrete, Metal, Wood, Gravel)
+- [DONE] Each surface branch plays a random sound variant using MakeArray (5 SoundWaves) + GetArrayItem (RandomIntegerInRange 0-4) + PlaySoundAtLocation
+- [DONE] Add Print String: `[FOOTSTEP] Surface detected: <surface name>` with debug output for each surface
+- [DONE] Test by walking across all 4 surface zones -- All surfaces detected correctly, correct sounds play with randomization
+
+**Design Deviation:** Used direct SoundWave references with MakeArray randomization instead of Sound Cues (SC_Footstep_*). This is simpler and provides equivalent functionality. Sound Cues can be added later during polish if more complex sound design features (layering, modulation) are needed.
 
 **Polish Criteria:** Each surface zone plays a clearly different footstep sound. No incorrect sounds fire. No log errors. Sounds feel timed to the animation.
 
 **Completion Notes:**
-*(Claude Code fills this in when Phase 2 is complete)*
+Phase 2 complete. Footstep surface detection system fully functional. 4 Physical Materials created and assigned to surface zone materials plus the default floor. 20 SoundWave assets imported (5 per surface: Concrete from PavementTiles, Metal from LowMetal, Wood from Parquet_Floor, Gravel from DirtRoad). HandleFootstep function in BP_BastionCharacter performs line trace, detects Physical Material via string matching, and plays a random sound variant per surface. GASP foley notify system modified to route through our custom handler while preserving fallback to default GASP sounds for non-Bastion characters. Sound polish pass pending (volume, pitch variation, attenuation).
 
 ---
 
@@ -344,5 +346,5 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ---
 
-*Document version: 1.2 -- Phase 1 complete*
+*Document version: 1.3 -- Phase 2 complete*
 *Last updated by: Salah Eddine Boussettah*
