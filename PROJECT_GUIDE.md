@@ -51,7 +51,7 @@ Content/
     VFX/
 ```
 
-All project assets live inside `Content/Bastion/`. Nothing is placed directly in the root Content folder.
+All project assets live inside `Content/Bastion/`. The Adventurer's Inventory Kit lives under `Content/InventoryKit/` (migrated in Phase 4R). Nothing else is placed directly in the root Content folder.
 
 ---
 
@@ -64,7 +64,8 @@ All project assets live inside `Content/Bastion/`. Nothing is placed directly in
 | 2     | Footstep Sound Surface Detection  | COMPLETE    |
 | 2.5   | Door Interaction System           | COMPLETE    |
 | 3     | Resource Gathering System         | COMPLETE    |
-| 3.5   | Inventory UI System              | COMPLETE    |
+| 3.5   | Inventory UI System              | REPLACED BY 4R |
+| 4R    | Adventurer's Inventory Kit Integration | COMPLETE |
 | 4     | Workbench and Crafting System     | NOT STARTED |
 | 5     | Basic Combat and Health System    | NOT STARTED |
 | 6     | Enemy AI and Spawning             | NOT STARTED |
@@ -234,6 +235,55 @@ Phase 3 complete. Resource gathering system uses the existing BPI_Interactable i
 
 **Completion Notes:**
 Phase 3.5 complete. Inventory UI system built with 23-widget WBP_InventoryPanel featuring dark overlay, centered panel, color-coded resource rows, and gold-styled title. Full toggle logic wired in BP_BastionCharacter with Branch on b_inventory_open controlling open/close paths including SetVisibility, UpdateDisplay (fetches live counts from BP_InventoryComponent), cursor toggle, and input mode switching. Resource node collision uses mesh's built-in collision geometry with BlockAllDynamic profile. Resource type auto-detection in BeginPlay parses actor display name (Contains "Stone"/"Metal") instead of relying on per-instance variable overrides. 9 resource nodes re-spawned with correct meshes and naming. Key bugs fixed: RootPanel visibility (Collapsed -> SelfHitTestInvisible), Create Widget WidgetType pin empty, inventory_widget null reference.
+
+---
+
+## PHASE 4R — Adventurer's Inventory Kit Integration
+
+**Goal:** Replace the custom-built inventory system (Phase 3.5) with the Adventurer's Inventory Kit by Tala Esenlikler, a polished, DataTable-driven inventory system with drag-and-drop, item hover info, gear/equipment slots, categorized item lists, and a professional UI.
+
+**Source project:** `C:\Users\SALAH\Documents\Unreal Projects\InventoryKit`
+
+**Tasks:**
+- [DONE] Sub-Phase 4R-A: Migrate Kit assets into BastionLastStand -- User migrated entire InventoryKit folder via UE5 Asset Actions > Migrate. All assets now under Content/InventoryKit/
+- [DONE] Sub-Phase 4R-B: Explore Kit API and configure resource items -- Inspected BP_InventoryComponent's AddItem function (takes DataTableRowHandle: DataTable + RowName). Added Wood, Rock, Steel rows to DT_AllItems and DT_TradeGoods DataTables
+- [DONE] Sub-Phase 4R-C: Attach Kit component to character, wire UI -- Removed old BP_InventoryComponent from BP_BastionCharacter, added Kit's BP_InventoryComponent. Wired Widget_Inventory creation in BeginPlay (create, set variable, AddToViewport, hide). Rewired TAB toggle to show/hide Kit's Widget_Inventory with PopulateInventoryItems on open
+- [DONE] Sub-Phase 4R-D: Rewire BP_ResourceNode to Kit's AddItem -- Replaced old AddResource call chain with GetComponentByClass(Kit's BP_InventoryComponent) -> AddItem(DT_AllItems, resource_type). resource_type maps: "Wood"->"Wood", "Stone"->"Rock", "Metal"->"Steel" (matching DT_AllItems row names)
+- [DONE] Sub-Phase 4R-E: Cleanup old files, update PROJECT_GUIDE -- Deleted old WBP_InventoryPanel, WBP_InventorySlot, WBP_QuickSelectBar, WBP_QuickSlot, old BP_InventoryComponent, and T_Icon_* textures
+
+**What the Kit Provides:**
+- `BP_InventoryComponent` + `BP_PlayerStatsComponent` (ActorComponents)
+- 7 DataTables (DT_AllItems, DT_AllGears, DT_Weapons, DT_Armors, DT_Documents, DT_QuestItems, DT_TradeGoods)
+- 28 structs, 19 enums (item types, rarity, gear categories, etc.)
+- 15 UI widgets (Widget_Inventory, Widget_ItemGridPanel, Widget_ItemHoverInfo, etc.)
+- 2 function libraries (BP_InventoryKitFL, BP_GameKitFL)
+- 3 interfaces (BP_GameInstanceInterface, BP_PlayerControllerInterface, BP_WidgetInterface)
+- Equipment system with mannequin meshes, animation montages
+- Save system (BP_SlotBasedSaveGame)
+
+**Key API Notes:**
+- Kit's AddItem takes a DataTableRowHandle (DataTable + RowName), NOT item_id/quantity
+- Items are defined in DT_AllItems with Struct_ItemMasterInfo rows
+- Trade goods (resources) also need an entry in DT_TradeGoods with Struct_TradeGoods data
+- Kit's Widget_Inventory uses PopulateInventoryItems to refresh the display
+- All Kit assets live under Content/InventoryKit/ (Blueprints, Widgets, Framework, Mannequin, etc.)
+
+**What Was Removed:**
+- Custom BP_InventoryComponent at /Game/Bastion/Blueprints/Core/ (replaced by Kit's version)
+- WBP_InventoryPanel, WBP_InventorySlot (replaced by Kit's Widget_Inventory)
+- WBP_QuickSelectBar, WBP_QuickSlot (Kit has its own hotbar)
+- T_Icon_Wood, T_Icon_Stone, T_Icon_Metal textures (Kit has its own icons)
+
+**Manual Steps Performed:**
+1. User migrated Kit assets via UE5 Migrate tool
+2. User added GetComponentByClass node in BP_ResourceNode (MCP type ambiguity with two BP_InventoryComponent classes)
+3. User created AddItem node by dragging from GetComponentByClass ReturnValue
+4. User split ItemInfo struct pin and set DataTable to DT_AllItems, RowName from resource_type
+
+**Polish Criteria:** Kit's inventory UI opens/closes with TAB. Resource gathering adds items to Kit's inventory. All 3 resource types (Wood, Stone, Metal) track correctly. Door interaction still works. No compile errors.
+
+**Completion Notes:**
+Phase 4R complete. Adventurer's Inventory Kit fully integrated. All old custom inventory assets deleted. BP_BastionCharacter uses Kit's BP_InventoryComponent and Widget_Inventory. BP_ResourceNode rewired to call Kit's AddItem with DataTableRowHandle pointing to DT_AllItems. Resource type mapping uses BeginPlay auto-detection: "Stone" actors -> "Rock" row, "Metal" actors -> "Steel" row, default "Wood" row. All blueprints compile clean with zero errors.
 
 ---
 
@@ -420,5 +470,5 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ---
 
-*Document version: 1.8 -- Phase 3.5 bug fixes and completion notes updated*
+*Document version: 2.0 -- Phase 4R: Adventurer's Inventory Kit integration complete*
 *Last updated by: Salah Eddine Boussettah*
