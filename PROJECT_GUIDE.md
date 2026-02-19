@@ -64,6 +64,7 @@ All project assets live inside `Content/Bastion/`. Nothing is placed directly in
 | 2     | Footstep Sound Surface Detection  | COMPLETE    |
 | 2.5   | Door Interaction System           | COMPLETE    |
 | 3     | Resource Gathering System         | COMPLETE    |
+| 3.5   | Inventory UI System              | COMPLETE    |
 | 4     | Workbench and Crafting System     | NOT STARTED |
 | 5     | Basic Combat and Health System    | NOT STARTED |
 | 6     | Enemy AI and Spawning             | NOT STARTED |
@@ -199,6 +200,40 @@ Phase 2.5 complete. Reusable interaction framework built with BPI_Interactable i
 
 **Completion Notes:**
 Phase 3 complete. Resource gathering system uses the existing BPI_Interactable interaction framework from Phase 2.5. MCP limitations required workarounds: String-based resource types with Branch routing instead of Enums, and separate Integer counters instead of Structs. Created WBP_InteractionPrompt (UI widget), BP_InventoryComponent (ActorComponent with AddResource/RemoveResource/GetResourceCount), and BP_ResourceNode (Actor implementing BPI_Interactable). 9 resource nodes placed across SandboxLevel with varied meshes. All 3 blueprints compile clean with zero errors.
+
+---
+
+## PHASE 3.5 — Inventory UI System
+
+**Goal:** Add a visual inventory panel so the player can see their gathered resources, fix resource node collision so players can't walk through them, and implement TAB key toggle with cursor management.
+
+**Tasks:**
+- [DONE] Fix BP_ResourceNode collision -- Set ResourceMesh CollisionProfileName to BlockAllDynamic and BodyInstance.CollisionEnabled to QueryAndPhysics via SCS template. Meshes already have collision geometry.
+- [DONE] Fix BP_ResourceNode resource_type per-instance -- MCP's set_object_property cannot persist Blueprint instance variables. Added auto-detection in BeginPlay: GetDisplayName -> Contains("Stone"/"Metal") -> Set resource_type accordingly. Actors named "ResourceNode_Stone1" etc. auto-detect their type.
+- [DONE] Create IA_ToggleInventory input action (Boolean) at /Game/Bastion/Input/ -- Tab key mapped in IMC_Sandbox with Pressed trigger
+- [DONE] Create WBP_InventoryPanel widget blueprint at /Game/Bastion/Blueprints/UI/ -- Full styled panel with BackgroundOverlay, MainPanel (Border), 3 resource rows (WoodRow, StoneRow, MetalRow) each with icon border, label, and count TextBlocks. Color-coded: Wood (warm brown), Stone (gray), Metal (steel blue), counts (bright green), title (gold). RootPanel visibility set to SelfHitTestInvisible; widget hidden at startup via SetVisibility(Collapsed) in BeginPlay after AddToViewport.
+- [DONE] Create UpdateDisplay function on WBP_InventoryPanel -- Takes wood, stone, metal Integer params. Uses Sequence node to set each TextBlock (WoodCount, StoneCount, MetalCount marked as Is Variable) via Conv_IntToText -> SetText
+- [DONE] Add b_inventory_open Boolean variable to BP_BastionCharacter (category: Inventory)
+- [DONE] Add inventory_widget variable (WBP_InventoryPanel Object Reference) to BP_BastionCharacter -- Created via MCP using Object:WBP_InventoryPanel_C type
+- [DONE] Wire Create Widget -> Cast To WBP_InventoryPanel -> Set inventory_widget -> Add to Viewport -> SetVisibility(Collapsed) in BP_BastionCharacter BeginPlay
+- [DONE] Wire inventory toggle logic in BP_BastionCharacter EventGraph -- Branch on b_inventory_open: True (close) sets false, SetVisibility(Collapsed), Set bShowMouseCursor=false, SetInputModeGameOnly. False (open) sets true, GetResourceCount x3 from InventoryComponent, UpdateDisplay, SetVisibility(SelfHitTestInvisible), Set bShowMouseCursor=true, SetInputModeGameAndUI
+- [MANUAL] Add EnhancedInputAction event for IA_ToggleInventory and connect Triggered to Branch
+- [MANUAL] Add Set Show Mouse Cursor nodes on both toggle branches
+
+**Design Notes:**
+- WBP_InventoryPanel uses direct widget variable references (bIsVariable set via MCP's set_object_property on WidgetTree objects) instead of GetWidgetFromName, avoiding runtime lookups
+- MCP cannot create EnhancedInputAction events or property setter nodes (Set bShowMouseCursor), so these are manual steps
+- Object Reference variables CAN be created via MCP using the _C suffix (e.g., Object:WBP_InventoryPanel_C)
+- Create Widget node requires explicit WidgetType pin value set via set_pin_value with full _C class path
+- Border widget background color (BrushColor) is not settable via set_widget_property; MainPanel background must be set manually
+- Icon textures (T_Icon_Wood, T_Icon_Stone, T_Icon_Metal) are optional and can be imported later
+- Resource type auto-detection via actor display name eliminates dependency on per-instance variable overrides
+- BP_ResourceNode has a vestigial BlockingCollision (BoxComponent) with NoCollision/1x1x1 size, added during debugging then disabled (MCP cannot remove components)
+
+**Polish Criteria:** Resource nodes block player movement. TAB opens a styled inventory panel showing all 3 resource counts. Cursor appears when open. TAB closes it, cursor hides, movement resumes. Counts update correctly after gathering. Each resource type (Wood, Stone, Metal) tracked separately.
+
+**Completion Notes:**
+Phase 3.5 complete. Inventory UI system built with 23-widget WBP_InventoryPanel featuring dark overlay, centered panel, color-coded resource rows, and gold-styled title. Full toggle logic wired in BP_BastionCharacter with Branch on b_inventory_open controlling open/close paths including SetVisibility, UpdateDisplay (fetches live counts from BP_InventoryComponent), cursor toggle, and input mode switching. Resource node collision uses mesh's built-in collision geometry with BlockAllDynamic profile. Resource type auto-detection in BeginPlay parses actor display name (Contains "Stone"/"Metal") instead of relying on per-instance variable overrides. 9 resource nodes re-spawned with correct meshes and naming. Key bugs fixed: RootPanel visibility (Collapsed -> SelfHitTestInvisible), Create Widget WidgetType pin empty, inventory_widget null reference.
 
 ---
 
@@ -378,9 +413,12 @@ Do not use Tick events for logic that can be driven by events or timers. Tick is
 
 ## Bug Log
 
-*(Claude Code adds known bugs here and marks them resolved when fixed)*
+- [RESOLVED] Phase 3.5: Inventory panel not showing on TAB press. Root cause: RootPanel (CanvasPanel inside WBP_InventoryPanel) had Visibility=Collapsed. Toggle logic set visibility on UserWidget, but child RootPanel stayed Collapsed. Fix: Set RootPanel to SelfHitTestInvisible, added SetVisibility(Collapsed) in BeginPlay after AddToViewport.
+- [RESOLVED] Phase 3.5: Create Widget returning null, causing "Accessed None" runtime error on inventory_widget. Root cause: WidgetType class pin on Create Widget node was empty. Fix: Set pin value to /Game/Bastion/Blueprints/UI/WBP_InventoryPanel.WBP_InventoryPanel_C.
+- [RESOLVED] Phase 3.5: All resource types showing as "Wood" (27 total). Root cause: All 9 BP_ResourceNode instances had resource_type = "Wood" (the default). MCP's set_object_property cannot persist per-instance Blueprint variable changes. Fix: Added auto-detection logic in BP_ResourceNode BeginPlay using GetDisplayName + Contains checks.
+- [RESOLVED] Phase 3.5: Player walking through resource node meshes. Root cause: Imported Edith Finch meshes have collision geometry but SCS template collision settings weren't propagating to existing instances. Fix: Deleted old instances and re-spawned fresh ones that inherit the correct SCS collision defaults (BlockAllDynamic + QueryAndPhysics).
 
 ---
 
-*Document version: 1.6 -- Added Phase 2.5 Door Interaction System*
+*Document version: 1.8 -- Phase 3.5 bug fixes and completion notes updated*
 *Last updated by: Salah Eddine Boussettah*
